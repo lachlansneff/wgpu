@@ -31,7 +31,7 @@ use wgt::{BufferAddress, BufferSize, InputStepMode, TextureDimension, TextureFor
 
 use std::{
     borrow::Cow, collections::hash_map::Entry, iter, marker::PhantomData, mem, ops::Range, ptr,
-    sync::atomic::Ordering,
+    sync::atomic::Ordering, num::NonZeroU64,
 };
 
 mod life;
@@ -3767,5 +3767,26 @@ impl<G: GlobalIdentityHandlerFactory> Global<G> {
             }
         }
         Ok(())
+    }
+
+    pub unsafe fn device_get_buffer_address<B: GfxBackend>(
+        &self,
+        buffer_id: id::BufferId,
+    ) -> Result<NonZeroU64, resource::BufferAccessError> {
+        let hub = B::hub(self);
+        let mut token = Token::root();
+
+        let (device_guard, mut token) = hub.devices.write(&mut token);
+        let (buffer_guard, _) = hub.buffers.read(&mut token);
+        let buffer = buffer_guard
+            .get(buffer_id)
+            .map_err(|_| resource::BufferAccessError::InvalidBuffer)?;
+        let device = &device_guard[buffer.device_id.value];
+
+        if !device.features.contains(wgt::Features::DEVICE_BUFFER_ADDRESS) {
+            panic!("You must enable `Features::DEVICE_BUFFER_ADDRESS` to call `device_get_buffer_address`")
+        }
+
+        Ok(device.raw.get_buffer_device_address(&buffer.raw))
     }
 }
