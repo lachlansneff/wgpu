@@ -30,8 +30,8 @@ use thiserror::Error;
 use wgt::{BufferAddress, BufferSize, InputStepMode, TextureDimension, TextureFormat};
 
 use std::{
-    borrow::Cow, collections::hash_map::Entry, iter, marker::PhantomData, mem, ops::Range, ptr,
-    sync::atomic::Ordering, num::NonZeroU64,
+    borrow::Cow, collections::hash_map::Entry, iter, marker::PhantomData, mem, num::NonZeroU64,
+    ops::Range, ptr, sync::atomic::Ordering,
 };
 
 mod life;
@@ -3783,7 +3783,10 @@ impl<G: GlobalIdentityHandlerFactory> Global<G> {
             .map_err(|_| resource::BufferAccessError::InvalidBuffer)?;
         let device = &device_guard[buffer.device_id.value];
 
-        if !device.features.contains(wgt::Features::DEVICE_BUFFER_ADDRESS) {
+        if !device
+            .features
+            .contains(wgt::Features::DEVICE_BUFFER_ADDRESS)
+        {
             panic!("You must enable `Features::DEVICE_BUFFER_ADDRESS` to call `device_get_buffer_address`")
         }
 
